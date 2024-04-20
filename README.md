@@ -11,6 +11,6 @@ There is absolutely **no warranty**.
 While we believe everything is calculated correctly and have tested everything with some reports, there can always be exceptions because Apple's reports aren't fully documented or could change.
 In such cases, the calculations should fail rather than provide false information.
 
-*Please verify for yourself that the numbers Plutus computes are reasonable.*
+*Please verify for yourself that the numbers this package computes are reasonable.*
 
-If you encounter a bug in the calculation, please let us know on by opening an issue or by [mail](mailto://plutus@no-comment.xyz).
+If you encounter a bug in the calculation, please let us know on by opening an issue.
