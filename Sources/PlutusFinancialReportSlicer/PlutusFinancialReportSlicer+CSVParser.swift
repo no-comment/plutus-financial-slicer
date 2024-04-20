@@ -42,3 +42,11 @@ extension PlutusFinancialReportSlicer {
         return data
     }
 }
+
+public enum ParsingError: Error {
+    case PendingMonthFile
+    case InvalidColumnCount
+    case NoDataInFile
+    case LineNoCurrencySymbol
+    case FailedParsingValue
+}
