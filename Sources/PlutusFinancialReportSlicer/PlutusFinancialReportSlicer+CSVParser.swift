@@ -1,10 +1,3 @@
-//
-//  File.swift
-//
-//
-//  Created by Miká Kruschel on 08.03.24.
-//
-
 import Foundation
 
 extension PlutusFinancialReportSlicer {

@@ -54,7 +54,6 @@ public enum PlutusFinancialReportSlicer {
             if line.first?.isEmpty ?? true {
                 break
             }
-            // print(line)
 
             // extract currency symbol from parentheses
             guard let currencyCol: String = line[safe: 0] else {
