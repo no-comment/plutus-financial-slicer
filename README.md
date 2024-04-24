@@ -4,7 +4,7 @@
 > This package was inspired by fedoco's [apple-slicer](https://github.com/fedoco/apple-slicer/tree/master) and is basically a modified version of it written in Swift instead of Python.
 
 ## What does this do?
-This package parses App Store Connect's *Financial Reports* and splits all sales by their responsible Apple Subsidiaries. This can then be used to easily create invoices like in our app [Plutus]().
+This package parses App Store Connect's *Financial Reports* and splits all sales by their responsible Apple Subsidiaries. This can then be used to easily create invoices like in our app [Plutus](https://apps.apple.com/app/id6499082870).
 
 ## Disclaimer
 There is absolutely **no warranty**.
