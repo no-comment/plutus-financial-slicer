@@ -319,6 +319,12 @@ public extension Subsidiary {
     static let restOfWorldCountries: [String] = [
         "AF", "AL", "DZ", "AO", "AM", "AZ", "BH", "BY", "BJ", "BT", "BW", "BN", "BF", "KH", "CM", "CV", "TD", "CG", "CD", "CI", "HR", "EG", "FJ", "GA", "GM", "GE", "GH", "GW", "IS", "IQ", "JO", "KZ", "KE", "KR", "KW", "KG", "LA", "LB", "LR", "LY", "MO", "MK", "MG", "MW", "MY", "MV", "ML", "MR", "MU", "FM", "MD", "MA", "MZ", "MM", "NA", "NR", "NP", "NE", "NG", "OM", "PK", "PW", "PG", "PH", "QA", "RW", "ST", "SN", "SC", "SL", "SB", "LK", "SZ", "TJ", "TZ", "TO", "TN", "TM", "UG", "UA", "UZ", "VU", "VN", "YE", "ZM", "ZW"
     ]
+
+    // https://developer.apple.com/help/app-store-connect/reference/financial-report-regions-and-currencies
+    // not for corporations but for currency conversion
+    static let latinAmericaCaribbeanCountries: [String] = [
+        "AI", "AG", "AR", "BS", "BB", "BZ", "BM", "BO", "BR", "VG", "KY", "CL", "CR", "DM", "DO", "EC", "SV", "GD", "GY", "GT", "HN", "JM", "MS", "NI", "PA", "PY", "KN", "LC", "VC", "SR", "TT", "TC", "UY", "VE"
+    ]
 }
 
 enum LookupError: Error {

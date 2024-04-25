@@ -13,6 +13,9 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
             ["Switzerland (CHF)", "29", "33.15", "33.15", "0", "0", "0", "33.15", "0.80030", "26.53", "EUR", ""],
             ["Euro-Zone (EUR)", "19", "206.89", "206.89", "0", "0", "0", "206.89", "1.00000", "206.89", "EUR", ""],
             ["Japan (JPY)", "2", "179", "179", "0", "0", "-37", "142", "0.00817", "1.16", "EUR", ""],
+            ["Americas (USD)", "42", "336.78", "336.78", "0", "0", "0", "336.78", "0.91956", "309.69", "EUR", ""],
+            ["Latin America and the Caribbean (USD)", "1", "5.09", "5.09", "0", "0", "0", "5.09", "0.91945", "4.68", "EUR", ""],
+            ["Rest of World (USD)", "1", "4.95", "4.95", "0", "0", "0", "4.95", "0.91919", "4.55", "EUR", ""],
             ["", "", "", "", "", "", "", "", "", "", "", "", ""],
             ["", "", "", "", "", "", "", "", "", "", "234.58 EUR", "", ""],
             ["", "", "", "", "", "", "", "", "", "", "Paid to FICTIONAL BANK -****1299", "", ""],
@@ -39,19 +42,15 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
         let splits = try PlutusFinancialReportSlicer.splitSalesByCorporation(sales: financialReportsData.sales, dateRange: dateRange, currencyData: currencyData)
         print(splits)
 
-        XCTAssertEqual(splits.count, 2)
-        guard splits.count == 2 else { return }
+        XCTAssertEqual(splits.count, 4)
+        guard splits.count == 4 else { return }
 
-        let jpCorp = splits.first(where: { $0.recipient.adress.contains("Japan") })!
-        let euCorp = splits.first(where: { $0.recipient.adress.contains("Ireland") })!
-
-        XCTAssertEqual(jpCorp.recipient, .japan)
-        XCTAssertEqual(euCorp.recipient, .europe)
+        let jpCorp = splits.first(where: { $0.recipient == .japan })!
+        let euCorp = splits.first(where: { $0.recipient == .europe })!
 
         XCTAssertEqual(jpCorp.totalInLocalCurrency, 1.16, accuracy: 0.000001)
-        XCTAssertEqual(euCorp.totalInLocalCurrency, 233.42, accuracy: 0.000001)
+        XCTAssertEqual(euCorp.totalInLocalCurrency, 237.97, accuracy: 0.000001)
 
-        // TODO: improve floating points only for 3 digits
         AssertSameCountrySplitting(jpCorp.countrySplitting, [
             Invoice.SubInvoice(country: "Japan", countryCode: "JP", countryCurrency: "JPY", invoiceItems: [
                 Invoice.InvoiceItem(quantity: 1, product: "Example App 3", amount: 94.4022346368715, exchangeRate: 0.008169014084507042, amountInLocalCurrency: 0.7711731843575418, dateRange: dateRange),
@@ -76,6 +75,9 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
                 Invoice.InvoiceItem(quantity: 2, product: "Example App 6", amount: 24.34, exchangeRate: 1.0, amountInLocalCurrency: 24.34, dateRange: dateRange),
                 Invoice.InvoiceItem(quantity: 15, product: "Example App 5", amount: 158.21, exchangeRate: 1.0, amountInLocalCurrency: 158.21, dateRange: dateRange),
             ]),
+            Invoice.SubInvoice(country: "Ukraine", countryCode: "UA", countryCurrency: "USD - RoW", invoiceItems: [
+                Invoice.InvoiceItem(quantity: 1, product: "Example App 5", amount: 4.95, exchangeRate: 0.9191919191919191, amountInLocalCurrency: 4.55, dateRange: dateRange),
+            ]),
         ])
     }
 
@@ -94,12 +96,21 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
             case "JPY":
                 XCTAssertEqual(data.exchangeRate, 0.008169014084507042253521126761, accuracy: 0.000001)
                 XCTAssertEqual(data.taxFactor, 0.7932960893854748603351955307, accuracy: 0.000001)
+            case "USD":
+                XCTAssertEqual(data.exchangeRate, 0.9195617316942812, accuracy: 0.000001)
+                XCTAssertEqual(data.taxFactor, 1, accuracy: 0.000001)
+            case "USD - RoW":
+                XCTAssertEqual(data.exchangeRate, 0.9191919191919191, accuracy: 0.000001)
+                XCTAssertEqual(data.taxFactor, 1, accuracy: 0.000001)
+            case "USD - LatAm":
+                XCTAssertEqual(data.exchangeRate, 0.91944990176817287, accuracy: 0.000001)
+                XCTAssertEqual(data.taxFactor, 1, accuracy: 0.000001)
             default:
-                XCTFail()
+                XCTFail(data.currency)
             }
         }
 
-        XCTAssertEqual(currencyData.count, 3)
+        XCTAssertEqual(currencyData.count, 6)
     }
 
     func testParseFinancialReports() throws {
@@ -131,23 +142,32 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
             case "FR":
                 AssertSameProductSales(countrySales.sales, [ProductSale(product: "Example App 5", quantity: 1, amount: 12.17)])
                 XCTAssertEqual(countrySales.currency, "EUR")
+            case "CA":
+                AssertSameProductSales(countrySales.sales, [ProductSale(product: "Example App 5", quantity: 1, amount: 10.2)])
+                XCTAssertEqual(countrySales.currency, "USD")
+            case "UA":
+                AssertSameProductSales(countrySales.sales, [ProductSale(product: "Example App 5", quantity: 1, amount: 4.95)])
+                XCTAssertEqual(countrySales.currency, "USD - RoW")
+            case "CR":
+                AssertSameProductSales(countrySales.sales, [ProductSale(product: "Example App 5", quantity: 1, amount: 5.09)])
+                XCTAssertEqual(countrySales.currency, "USD - LatAm")
             default:
-                XCTFail()
+                XCTFail(countrySales.countryCode)
             }
         }
 
-        XCTAssertEqual(financialReportsData.sales.count, 5)
+        XCTAssertEqual(financialReportsData.sales.count, 8)
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MM/dd/yyyy"
         XCTAssertEqual(financialReportsData.dateRange, DateInterval(start: dateFormatter.date(from: "08/31/2014")!, end: dateFormatter.date(from: "09/27/2014")!))
     }
 
-    fileprivate func AssertSameCountrySplitting(_ a: [Invoice.SubInvoice], _ b: [Invoice.SubInvoice]) {
-        XCTAssertEqual(Set(a), Set(b))
+    fileprivate func AssertSameCountrySplitting(_ a: [Invoice.SubInvoice], _ b: [Invoice.SubInvoice], file: StaticString = #file, line: UInt = #line) {
+        XCTAssertEqual(Set(a), Set(b), file: file, line: line)
     }
 
-    fileprivate func AssertSameProductSales(_ a: [ProductSale], _ b: [ProductSale]) {
-        XCTAssertEqual(Set(a), Set(b))
+    fileprivate func AssertSameProductSales(_ a: [ProductSale], _ b: [ProductSale], file: StaticString = #file, line: UInt = #line) {
+        XCTAssertEqual(Set(a), Set(b), file: file, line: line)
     }
 
     fileprivate func readFile(url: URL) throws -> String {

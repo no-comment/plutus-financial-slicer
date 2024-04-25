@@ -78,15 +78,24 @@ public enum PlutusFinancialReportSlicer {
             }
             var currency = String(regexMatch[currencySymbolReference])
 
-            // USD can occur twice in the file: We must take special care to distinguish between USD (and their corresponding
-            // exchange rate) for purchases made in "Americas" and in "Rest of World", as Apple calls it. Unfortunately, Apple
+            // USD can occur three times in the file: We must take special care to distinguish between USD (and their corresponding
+            // exchange rate) for purchases made in "Americas", in "Rest of World", and in "Latin America and the Caribbean". Unfortunately, Apple
             // decided to localize the aforementioned strings so they need to be looked up in a translation table. Luckily,
             // localized report files currently seem to be generated only for French, German, Italian and Spanish locale settings.
-            let localizationsRoW = ["of World", "du monde", "der Welt", "del mondo", "del mundo"]
             if currency == "USD" {
+                let localizationsRoW = ["of World", "du monde", "der Welt", "del mondo", "del mundo"]
                 for localization in localizationsRoW {
                     if currencyCol.lowercased().contains(localization.lowercased()) {
                         currency = "USD - RoW"
+                        break
+                    }
+                }
+
+                let localizationsLatAm = ["latin", "Latin America and the Caribbean", "Amérique latine et Caraïbes", "Lateinamerika und Karibik", "America Latina e Caraibi", "América Latina y el Caribe"]
+                for localization in localizationsLatAm {
+                    if currencyCol.lowercased().contains(localization.lowercased()) {
+                        currency = "USD - LatAm"
+                        break
                     }
                 }
             }
@@ -184,6 +193,11 @@ public enum PlutusFinancialReportSlicer {
             if Subsidiary.restOfWorldCountries.contains(countryCode) && currency == "USD" {
                 currencies[countryCode] = "USD - RoW"
             }
+            // special case affecting countries Apple put in the "Latin America and the Caribbean" group: currency for those is listed as "USD"
+            // in the sales reports but the corresponding exchange rate is keyed "USD - LatAm"
+            if Subsidiary.latinAmericaCaribbeanCountries.contains(countryCode) && currency == "USD" {
+                currencies[countryCode] = "USD - LatAm"
+            }
         }
 
         // break if we didn't read any meaningful data
@@ -248,9 +262,6 @@ public enum PlutusFinancialReportSlicer {
 
                     invoiceItems.append(Invoice.InvoiceItem(quantity: quantity, product: product.product, amount: amount, exchangeRate: exchangeRate, amountInLocalCurrency: amountInLocalCurrency, dateRange: dateRange))
                 }
-
-                // although of course rounding happens here, too, it won't show because Apple converts currencies in the same per country manner
-                let countrySumInLocalCurrency = countrySum * exchangeRate
 
                 countrySplitting.append(Invoice.SubInvoice(country: country, countryCode: countryCode, countryCurrency: countryCurrency, invoiceItems: invoiceItems))
             }
