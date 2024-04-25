@@ -91,7 +91,7 @@ public enum PlutusFinancialReportSlicer {
                     }
                 }
 
-                let localizationsLatAm = ["latin", "Latin America and the Caribbean", "Amérique latine et Caraïbes", "Lateinamerika und Karibik", "America Latina e Caraibi", "América Latina y el Caribe"]
+                let localizationsLatAm = ["latin", "latein"]
                 for localization in localizationsLatAm {
                     if currencyCol.lowercased().contains(localization.lowercased()) {
                         currency = "USD - LatAm"
@@ -235,13 +235,13 @@ public enum PlutusFinancialReportSlicer {
                 var exchangeRate: Double = 1
                 var taxFactor: Double = 1
 
-                // TODO: throw if currency not found in currencyData
                 if countryCurrency != localCurrency {
                     if let data = currencyData.first(where: { $0.currency == countryCurrency }) {
                         exchangeRate = data.exchangeRate
                         taxFactor = data.taxFactor
                     } else if productsSold.contains(where: { $0.quantity > 0 }) {
-                        fatalError("\(countryCurrency) not found in currency data")
+                        assertionFailure("\(countryCurrency) not found in currency data")
+                        throw ParsingError.CurrencyDataNotFound
                     }
                 }
 
@@ -251,7 +251,6 @@ public enum PlutusFinancialReportSlicer {
                     var amount = product.amount
 
                     // subtract local tax(es) if applicable in country (f. ex. in JPY)
-                    // TODO: check if -= is correct
                     amount -= amount - amount * taxFactor
 
                     countrySum += amount

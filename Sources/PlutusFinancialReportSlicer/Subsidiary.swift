@@ -16,23 +16,6 @@ public enum Subsidiary: CaseIterable, Codable, Comparable {
         print("Error: Could not find Subsidiary for \(code).")
         return nil
     }
-
-    var countryCode: String {
-        switch self {
-        case .australia:
-            "AU"
-        case .canada:
-            "CA"
-        case .europe:
-            "EU"
-        case .japan:
-            "JP"
-        case .latam:
-            "LL"
-        case .us:
-            "US"
-        }
-    }
 }
 
 public extension Subsidiary {
@@ -43,7 +26,7 @@ public extension Subsidiary {
             Apple Pty Limited
             Level 3
             20 Martin Place
-            Sydney South 2000
+            Sydney NSW 2000
             Australia
             """
         case .canada:
@@ -55,8 +38,7 @@ public extension Subsidiary {
             """
         case .europe:
             """
-            Apple Distribution International
-            Internet Software & Services
+            Apple Distribution International Ltd.
             Hollyhill Industrial Estate
             Hollyhill, Cork
             Republic of Ireland

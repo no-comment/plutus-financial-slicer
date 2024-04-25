@@ -42,4 +42,5 @@ public enum ParsingError: Error {
     case NoDataInFile
     case LineNoCurrencySymbol
     case FailedParsingValue
+    case CurrencyDataNotFound
 }
