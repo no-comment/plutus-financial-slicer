@@ -4,10 +4,12 @@ public struct Invoice: Equatable, Codable, Hashable {
     public let recipient: Subsidiary
     public let countrySplitting: [SubInvoice]
     public var totalInLocalCurrency: Double { countrySplitting.reduce(0, { $0 + $1.subtotalAmountInLocalCurrency }) }
-
-    public init(recipient: Subsidiary, countrySplitting: [SubInvoice]) {
+    public let localCurrency: String
+    
+    public init(recipient: Subsidiary, countrySplitting: [SubInvoice], localCurrency: String) {
         self.recipient = recipient
         self.countrySplitting = countrySplitting
+        self.localCurrency = localCurrency
     }
 
     public struct SubInvoice: Equatable, Hashable, Codable {
@@ -64,4 +66,5 @@ public struct CurrencyData: Codable, Equatable {
     let currency: String
     let exchangeRate: Double
     let taxFactor: Double
+    let bankAccountCurrency: String
 }

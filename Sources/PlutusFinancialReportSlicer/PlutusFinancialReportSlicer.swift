@@ -47,6 +47,7 @@ public enum PlutusFinancialReportSlicer {
         let columnIndexAmountPreTax = 3 + (headerRow.count == 13 ? 1 : 0)
         let columnIndexAmountAfterTax = 7 + (headerRow.count == 13 ? 1 : 0)
         let columnIndexEarnings = 9 + (headerRow.count == 13 ? 1 : 0)
+        let columnIndexBankAccountCurrency = 10 + (headerRow.count == 13 ? 1 : 0)
 
         for line in lines.dropFirst(3) {
             // abort processing at the first blank line: separated by a line with empty fields, reports can contain earnings
@@ -103,6 +104,7 @@ public enum PlutusFinancialReportSlicer {
             guard let preTaxString = line[safe: columnIndexAmountPreTax]?.replacingOccurrences(of: ",", with: ""),
                   let afterTaxString = line[safe: columnIndexAmountAfterTax]?.replacingOccurrences(of: ",", with: ""),
                   let earningsString = line[safe: columnIndexEarnings]?.replacingOccurrences(of: ",", with: ""),
+                  let bankAccountCurrency = line[safe: columnIndexBankAccountCurrency]?.replacingOccurrences(of: ",", with: ""),
 
                   let amountPreTax = Double(preTaxString),
                   let amountAfterTax = Double(afterTaxString),
@@ -120,14 +122,14 @@ public enum PlutusFinancialReportSlicer {
                 continue
             }
 
-            // calculate the exchange rate explicitly instead of relying on the "Exchange Rate“ column
+            // calculate the exchange rate explicitly instead of relying on the "Exchange Rate" column
             // because its value is rounded to 6 decimal places and sometimes not precise enough
             let exchangeRate = earnings / amountAfterTax
 
             let tax: Double = amountPreTax - amountAfterTax
             let taxFactor = 1.0 - abs(tax / amountPreTax)
 
-            result.append(CurrencyData(currency: currency, exchangeRate: exchangeRate, taxFactor: taxFactor))
+            result.append(CurrencyData(currency: currency, exchangeRate: exchangeRate, taxFactor: taxFactor, bankAccountCurrency: bankAccountCurrency))
         }
 
         return result
@@ -213,7 +215,8 @@ public enum PlutusFinancialReportSlicer {
     }
 
     /// Print sales grouped by Apple subsidiaries, by countries in which the sales have been made and by products sold.
-    public static func splitSalesByCorporation(sales: [SalesForCountry], dateRange: DateInterval, currencyData: [CurrencyData], selectedCorporations: [Subsidiary] = Subsidiary.allCases, localCurrency: String = "EUR") throws -> [Invoice] {
+    public static func splitSalesByCorporation(sales: [SalesForCountry], dateRange: DateInterval, currencyData: [CurrencyData], selectedCorporations: [Subsidiary] = Subsidiary.allCases, localCurrency: String? = nil) throws -> [Invoice] {
+        let localCurrency: String = localCurrency ?? currencyData.map(\.bankAccountCurrency).reduce(into: [:], { $0[$1, default: 0] += 1 }).max(by: { $0.value < $1.value })?.key ?? "EUR"
         var invoices: [Invoice] = []
 
         let corporations: [Subsidiary?: [SalesForCountry]] = Dictionary(grouping: sales, by: { Subsidiary(code: $0.countryCode) })
@@ -267,7 +270,8 @@ public enum PlutusFinancialReportSlicer {
 
             invoices.append(Invoice(
                 recipient: corporation,
-                countrySplitting: countrySplitting))
+                countrySplitting: countrySplitting,
+                localCurrency: localCurrency))
         }
 
         return invoices

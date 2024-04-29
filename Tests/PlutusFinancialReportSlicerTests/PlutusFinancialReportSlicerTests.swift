@@ -86,6 +86,7 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
         let currencyData = try PlutusFinancialReportSlicer.parseCurrencyData(input: input)
 
         for data in currencyData {
+            XCTAssertEqual(data.bankAccountCurrency, "EUR")
             switch data.currency {
             case "CHF":
                 XCTAssertEqual(data.exchangeRate, 0.8003016591251885369532428356, accuracy: 0.000001)
