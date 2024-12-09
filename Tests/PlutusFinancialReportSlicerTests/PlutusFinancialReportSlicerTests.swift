@@ -37,7 +37,7 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
         let report: String = try readFile(url: Bundle.module.url(forResource: "45545510_0914", withExtension: "txt")!)
         let financialReportsData = try PlutusFinancialReportSlicer.parseFinancialReports(report: report)
 
-        let dateRange = DateInterval()
+        let dateRange = DateInterval(start: .now.addingTimeInterval(-60 * 60 * 24 * 3), end: .now)
 
         let splits = try PlutusFinancialReportSlicer.splitSalesByCorporation(sales: financialReportsData.sales, dateRange: dateRange, currencyData: currencyData)
         print(splits)

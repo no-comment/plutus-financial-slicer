@@ -99,6 +99,14 @@ public enum PlutusFinancialReportSlicer {
                         break
                     }
                 }
+
+                let localizationsAP = ["Pacif", "Pacíf", "Pazif"]
+                for localization in localizationsAP {
+                    if currencyCol.lowercased().contains(localization.lowercased()) {
+                        currency = "USD - AP"
+                        break
+                    }
+                }
             }
 
             guard let preTaxString = line[safe: columnIndexAmountPreTax]?.replacingOccurrences(of: ",", with: ""),
@@ -190,6 +198,13 @@ public enum PlutusFinancialReportSlicer {
             // remember currency of current line's country
             currencies[countryCode] = currency
 
+            if let start = formatDate(startDate), start >= Date.subsidiaryChange2024 {
+                // special case affecting countries Apple put in the "South Asia and Pacific" group: currency for those is listed as "USD"
+                // in the sales reports but the corresponding exchange rate is keyed "USD - AP"
+                if Subsidiary.pacificCountries.contains(countryCode) && currency == "USD" {
+                    currencies[countryCode] = "USD - AP"
+                }
+            }
             // special case affecting countries Apple put in the "Rest of World" group: currency for those is listed as "USD"
             // in the sales reports but the corresponding exchange rate is keyed "USD - RoW"
             if Subsidiary.restOfWorldCountries.contains(countryCode) && currency == "USD" {
@@ -219,7 +234,11 @@ public enum PlutusFinancialReportSlicer {
         let localCurrency: String = localCurrency ?? currencyData.map(\.bankAccountCurrency).reduce(into: [:], { $0[$1, default: 0] += 1 }).max(by: { $0.value < $1.value })?.key ?? "EUR"
         var invoices: [Invoice] = []
 
-        let corporations: [Subsidiary?: [SalesForCountry]] = Dictionary(grouping: sales, by: { Subsidiary(code: $0.countryCode) })
+        guard dateRange.start >= Date.subsidiaryChange2024 || dateRange.end <= Date.subsidiaryChange2024 else {
+            throw ParsingError.DateRangeOverlappingBreakingChangeDate
+        }
+
+        let corporations: [Subsidiary?: [SalesForCountry]] = Dictionary(grouping: sales, by: { Subsidiary(code: $0.countryCode, date: dateRange.start) })
 
         for (corporation, salesInCorp) in corporations {
             guard let corporation else { continue }
