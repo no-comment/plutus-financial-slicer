@@ -37,7 +37,7 @@ extension PlutusFinancialReportSlicer {
 }
 
 public enum ParsingError: Error {
-    case PendingMonthFile
+    case PreliminaryMonthFile
     case InvalidColumnCount
     case NoDataInFile
     case LineNoCurrencySymbol
@@ -45,4 +45,25 @@ public enum ParsingError: Error {
     case CurrencyDataNotFound(currency: String)
     /// Apple changed its subsidiary structure on October 26, 2024. Sales must occur either before or after that date.
     case DateRangeOverlappingBreakingChangeDate(interval: DateInterval)
+}
+
+extension ParsingError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .PreliminaryMonthFile:
+            NSLocalizedString("The file contained preliminary data.", comment: "Localized description for ParsingError.PreliminaryMonthFile")
+        case .InvalidColumnCount:
+            NSLocalizedString("The file has an invalid number of columns.", comment: "Localized description for ParsingError.InvalidColumnCount")
+        case .NoDataInFile:
+            NSLocalizedString("There was not data in the file.", comment: "Localized description for ParsingError.NoDataInFile")
+        case .LineNoCurrencySymbol:
+            NSLocalizedString("No currency symbol found in line.", comment: "Localized description for ParsingError.LineNoCurrencySymbol")
+        case .FailedParsingValue:
+            NSLocalizedString("Failed parsing the report.", comment: "Localized description for ParsingError.FailedParsingValue")
+        case .CurrencyDataNotFound(let currency):
+            NSLocalizedString("No currency data was found for '\(currency)'.", comment: "Localized description for ParsingError.CurrencyDataNotFound")
+        case .DateRangeOverlappingBreakingChangeDate(let interval):
+            NSLocalizedString("The date range (\(interval.debugDescription) overlaps subsidiary structure change date.", comment: "Localized description for ParsingError.DateRangeOverlappingBreakingChangeDate")
+        }
+    }
 }

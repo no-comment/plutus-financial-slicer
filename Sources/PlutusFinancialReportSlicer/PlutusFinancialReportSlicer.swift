@@ -35,7 +35,7 @@ public enum PlutusFinancialReportSlicer {
 
         // check valid file
         if firstRow.count == 10 {
-            throw ParsingError.PendingMonthFile
+            throw ParsingError.PreliminaryMonthFile
         }
 
         if firstRow.count != 13 || (headerRow.count != 12 && headerRow.count != 13) {

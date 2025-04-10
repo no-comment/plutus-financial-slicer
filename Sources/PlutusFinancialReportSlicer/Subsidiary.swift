@@ -599,3 +599,14 @@ enum LookupError: Error {
     case unknownCountryCode(String)
     case unknownAppleCorporation(String)
 }
+
+extension LookupError: LocalizedError {
+    public var errorDescription: String? {
+        switch self {
+        case .unknownCountryCode(let string):
+            NSLocalizedString("Unknown country code: \(string).", comment: "Localized description for LookupError.unknownCountryCode")
+        case .unknownAppleCorporation(let string):
+            NSLocalizedString("Unknown apple corporation: \(string).", comment: "Localized description for LookupError.unknownAppleCorporation")
+        }
+    }
+}
