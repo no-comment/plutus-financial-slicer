@@ -235,7 +235,7 @@ public enum PlutusFinancialReportSlicer {
         var invoices: [Invoice] = []
 
         guard dateRange.start >= Date.subsidiaryChange2024 || dateRange.end <= Date.subsidiaryChange2024 else {
-            throw ParsingError.DateRangeOverlappingBreakingChangeDate
+            throw ParsingError.DateRangeOverlappingBreakingChangeDate(interval: dateRange)
         }
 
         let corporations: [Subsidiary?: [SalesForCountry]] = Dictionary(grouping: sales, by: { Subsidiary(code: $0.countryCode, date: dateRange.start) })
@@ -263,7 +263,7 @@ public enum PlutusFinancialReportSlicer {
                         taxFactor = data.taxFactor
                     } else if productsSold.contains(where: { $0.quantity > 0 }) {
                         assertionFailure("\(countryCurrency) not found in currency data")
-                        throw ParsingError.CurrencyDataNotFound
+                        throw ParsingError.CurrencyDataNotFound(currency: countryCurrency)
                     }
                 }
 

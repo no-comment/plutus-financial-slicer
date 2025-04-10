@@ -42,7 +42,7 @@ public enum ParsingError: Error {
     case NoDataInFile
     case LineNoCurrencySymbol
     case FailedParsingValue
-    case CurrencyDataNotFound
+    case CurrencyDataNotFound(currency: String)
     /// Apple changed its subsidiary structure on October 26, 2024. Sales must occur either before or after that date.
-    case DateRangeOverlappingBreakingChangeDate
+    case DateRangeOverlappingBreakingChangeDate(interval: DateInterval)
 }
