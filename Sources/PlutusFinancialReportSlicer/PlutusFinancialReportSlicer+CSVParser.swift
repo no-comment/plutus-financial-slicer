@@ -51,7 +51,7 @@ extension ParsingError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .PreliminaryMonthFile:
-            NSLocalizedString("The file contained preliminary data.", comment: "Localized description for ParsingError.PreliminaryMonthFile")
+            NSLocalizedString("This file is pending payment and not finalized.", comment: "Localized description for ParsingError.PreliminaryMonthFile")
         case .InvalidColumnCount:
             NSLocalizedString("The file has an invalid number of columns.", comment: "Localized description for ParsingError.InvalidColumnCount")
         case .NoDataInFile:
@@ -59,7 +59,7 @@ extension ParsingError: LocalizedError {
         case .LineNoCurrencySymbol:
             NSLocalizedString("No currency symbol found in line.", comment: "Localized description for ParsingError.LineNoCurrencySymbol")
         case .FailedParsingValue:
-            NSLocalizedString("Failed parsing the report.", comment: "Localized description for ParsingError.FailedParsingValue")
+            NSLocalizedString("Failed parsing a value", comment: "Localized description for ParsingError.FailedParsingValue")
         case .CurrencyDataNotFound(let currency):
             NSLocalizedString("No currency data was found for '\(currency)'.", comment: "Localized description for ParsingError.CurrencyDataNotFound")
         case .DateRangeOverlappingBreakingChangeDate(let interval):
