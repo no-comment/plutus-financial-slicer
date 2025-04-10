@@ -453,19 +453,134 @@ public extension Subsidiary {
     // https://developer.apple.com/help/app-store-connect/reference/financial-report-regions-and-currencies
     // not for corporations but for currency conversion
     static let restOfWorldCountries: [String] = [
-        "AF", "AL", "DZ", "AO", "AM", "AZ", "BH", "BY", "BJ", "BT", "BW", "BN", "BF", "KH", "CM", "CV", "TD", "CG", "CD", "CI", "HR", "EG", "FJ", "GA", "GM", "GE", "GH", "GW", "IS", "IQ", "JO", "KZ", "KE", "KR", "KW", "KG", "LA", "LB", "LR", "LY", "MO", "MK", "MG", "MW", "MY", "MV", "ML", "MR", "MU", "FM", "MD", "MA", "MZ", "MM", "NA", "NR", "NP", "NE", "NG", "OM", "PK", "PW", "PG", "PH", "QA", "RW", "ST", "SN", "SC", "SL", "SB", "LK", "SZ", "TJ", "TZ", "TO", "TN", "TM", "UG", "UA", "UZ", "VU", "VN", "YE", "ZM", "ZW"
+        "AF", // Afghanistan
+        "AL", // Albania
+        "DZ", // Algeria
+        "AO", // Angola
+        "AM", // Armenia
+        "AZ", // Azerbaijan
+        "BH", // Bahrain
+        "BY", // Belarus
+        "BJ", // Benin
+        "BW", // Botswana
+        "BF", // Burkina Faso
+        "CM", // Cameroon
+        "CV", // Cape Verde
+        "TD", // Chad
+        "CD", // Democratic Republic of the Congo
+        "CG", // Republic of the Congo
+        "CI", // Côte d'Ivoire
+        "HR", // Croatia
+        "EG", // Egypt
+        "SZ", // Eswatini
+        "GA", // Gabon
+        "GM", // Gambia
+        "GE", // Georgia
+        "GH", // Ghana
+        "GW", // Guinea-Bissau
+        "IS", // Iceland
+        "IQ", // Iraq
+        "JO", // Jordan
+        "KZ", // Kazakhstan
+        "KE", // Kenya
+        "KW", // Kuwait
+        "KG", // Kyrgyzstan
+        "LB", // Lebanon
+        "LR", // Liberia
+        "LY", // Libya
+        "MG", // Madagascar
+        "MW", // Malawi
+        "MY", // Malaysia
+        "ML", // Mali
+        "MR", // Mauritania
+        "MU", // Mauritius
+        "MD", // Moldova
+        "MA", // Morocco
+        "MZ", // Mozambique
+        "NA", // Namibia
+        "NE", // Niger
+        "NG", // Nigeria
+        "MK", // North Macedonia
+        "OM", // Oman
+        "PK", // Pakistan
+        "PH", // Philippines
+        "QA", // Qatar
+        "RW", // Rwanda
+        "ST", // São Tomé and Príncipe
+        "SN", // Senegal
+        "SC", // Seychelles
+        "SL", // Sierra Leone
+        "TJ", // Tajikistan
+        "TN", // Tunisia
+        "TM", // Turkmenistan
+        "UG", // Uganda
+        "UA", // Ukraine
+        "UZ", // Uzbekistan
+        "VN", // Vietnam
+        "YE", // Yemen
+        "ZM", // Zambia
+        "ZW" // Zimbabwe
     ]
 
     // https://developer.apple.com/help/app-store-connect/reference/financial-report-regions-and-currencies
     // not for corporations but for currency conversion
     static let latinAmericaCaribbeanCountries: [String] = [
-        "AI", "AG", "AR", "BS", "BB", "BZ", "BM", "BO", "BR", "VG", "KY", "CL", "CR", "DM", "DO", "EC", "SV", "GD", "GY", "GT", "HN", "JM", "MS", "NI", "PA", "PY", "KN", "LC", "VC", "SR", "TT", "TC", "UY", "VE"
+        "AI", // Anguilla
+        "AG", // Antigua and Barbuda
+        "AR", // Argentina
+        "BS", // Bahamas
+        "BB", // Barbados
+        "BZ", // Belize
+        "BM", // Bermuda
+        "BO", // Bolivia
+        "VG", // British Virgin Islands
+        "KY", // Cayman Islands
+        "CL", // Chile
+        "CR", // Costa Rica
+        "DM", // Dominica
+        "DO", // Dominican Republic
+        "EC", // Ecuador
+        "SV", // El Salvador
+        "GD", // Grenada
+        "GT", // Guatemala
+        "GY", // Guyana
+        "HN", // Honduras
+        "JM", // Jamaica
+        "MS", // Montserrat
+        "NI", // Nicaragua
+        "PA", // Panama
+        "PY", // Paraguay
+        "LC", // Saint Lucia
+        "KN", // St. Kitts and Nevis
+        "VC", // St. Vincent and the Grenadines
+        "SR", // Suriname
+        "TT", // Trinidad and Tobago
+        "TC", // Turks and Caicos Islands
+        "UY", // Uruguay
+        "VE" // Venezuela
     ]
 
     // https://developer.apple.com/help/app-store-connect/reference/financial-report-regions-and-currencies
     // not for corporations but for currency conversion
     static let pacificCountries: [String] = [
-        "BT", "BN", "KH", "FM", "FJ", "KR", "LA", "MO", "MV", "MN", "MM", "NR", "NP", "PW", "PG", "SB", "LK", "TO", "VU"
+        "BT", // Bhutan
+        "BN", // Brunei
+        "KH", // Cambodia
+        "FJ", // Fiji
+        "LA", // Laos
+        "MO", // Macau
+        "MV", // Maldives
+        "FM", // Micronesia
+        "MN", // Mongolia
+        "MM", // Myanmar
+        "NR", // Nauru
+        "NP", // Nepal
+        "PW", // Palau
+        "PG", // Papua New Guinea
+        "SB", // Solomon Islands
+        "LK", // Sri Lanka
+        "TO", // Tonga
+        "VU" // Vanuatu
     ]
 }
 
