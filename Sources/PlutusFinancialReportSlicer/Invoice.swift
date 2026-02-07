@@ -3,13 +3,17 @@ import Foundation
 public struct Invoice: Equatable, Codable, Hashable {
     public let recipient: Subsidiary
     public let countrySplitting: [SubInvoice]
-    public var totalInLocalCurrency: Double { countrySplitting.reduce(0, { $0 + $1.subtotalAmountInLocalCurrency }) }
+    public let currencyAdjustments: [CurrencyAdjustment]
+    public var totalInLocalCurrency: Double {
+        countrySplitting.reduce(0, { $0 + $1.subtotalAmountInLocalCurrency }) + currencyAdjustments.reduce(0, { $0 + $1.amountInLocalCurrency })
+    }
     public let localCurrency: String
     
-    public init(recipient: Subsidiary, countrySplitting: [SubInvoice], localCurrency: String) {
+    public init(recipient: Subsidiary, countrySplitting: [SubInvoice], localCurrency: String, currencyAdjustments: [CurrencyAdjustment] = []) {
         self.recipient = recipient
         self.countrySplitting = countrySplitting
         self.localCurrency = localCurrency
+        self.currencyAdjustments = currencyAdjustments
     }
 
     public struct SubInvoice: Equatable, Hashable, Codable {
@@ -48,6 +52,20 @@ public struct Invoice: Equatable, Codable, Hashable {
             self.dateRange = dateRange
         }
     }
+
+    public struct CurrencyAdjustment: Equatable, Hashable, Codable {
+        public let currency: String
+        public let amount: Double
+        public let exchangeRate: Double
+        public let amountInLocalCurrency: Double
+
+        public init(currency: String, amount: Double, exchangeRate: Double, amountInLocalCurrency: Double) {
+            self.currency = currency
+            self.amount = amount
+            self.exchangeRate = exchangeRate
+            self.amountInLocalCurrency = amountInLocalCurrency
+        }
+    }
 }
 
 public struct SalesForCountry: Codable {
@@ -66,5 +84,6 @@ public struct CurrencyData: Codable, Equatable {
     let currency: String
     let exchangeRate: Double
     let taxFactor: Double
+    let adjustments: Double
     let bankAccountCurrency: String
 }

@@ -91,27 +91,108 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
             case "CHF":
                 XCTAssertEqual(data.exchangeRate, 0.8003016591251885369532428356, accuracy: 0.000001)
                 XCTAssertEqual(data.taxFactor, 1, accuracy: 0.000001)
+                XCTAssertEqual(data.adjustments, 0, accuracy: 0.000001)
             case "EUR":
                 XCTAssertEqual(data.exchangeRate, 1, accuracy: 0.000001)
                 XCTAssertEqual(data.taxFactor, 1, accuracy: 0.000001)
+                XCTAssertEqual(data.adjustments, 0, accuracy: 0.000001)
             case "JPY":
                 XCTAssertEqual(data.exchangeRate, 0.008169014084507042253521126761, accuracy: 0.000001)
                 XCTAssertEqual(data.taxFactor, 0.7932960893854748603351955307, accuracy: 0.000001)
+                XCTAssertEqual(data.adjustments, 0, accuracy: 0.000001)
             case "USD":
                 XCTAssertEqual(data.exchangeRate, 0.9195617316942812, accuracy: 0.000001)
                 XCTAssertEqual(data.taxFactor, 1, accuracy: 0.000001)
+                XCTAssertEqual(data.adjustments, 0, accuracy: 0.000001)
             case "USD - RoW":
                 XCTAssertEqual(data.exchangeRate, 0.9191919191919191, accuracy: 0.000001)
                 XCTAssertEqual(data.taxFactor, 1, accuracy: 0.000001)
+                XCTAssertEqual(data.adjustments, 0, accuracy: 0.000001)
             case "USD - LatAm":
                 XCTAssertEqual(data.exchangeRate, 0.91944990176817287, accuracy: 0.000001)
                 XCTAssertEqual(data.taxFactor, 1, accuracy: 0.000001)
+                XCTAssertEqual(data.adjustments, 0, accuracy: 0.000001)
             default:
                 XCTFail(data.currency)
             }
         }
 
         XCTAssertEqual(currencyData.count, 6)
+    }
+
+    func testCurrencyDataParsesAdjustmentsAndKeepsTaxIndependent() throws {
+        let firstRow = "iTunes Connect - Payments and Financial Reports (January 2026)" + String(repeating: ",", count: 12)
+        let blankRow = String(repeating: ",", count: 12)
+        let input = [
+            firstRow,
+            blankRow,
+            "Region (Currency),Units Sold,Earned,Pre-Tax Subtotal,Input Tax,Adjustments,Withholding Tax,Total Owed,Exchange Rate,Proceeds,Bank Account Currency,",
+            "Euro-Zone (EUR),1,100.00,100.00,0,10.00,0,110.00,1.00000,110.00,EUR,",
+            "Japan (JPY),1,100.00,100.00,0,0,-20.00,80.00,0.01000,0.80,EUR,",
+            blankRow,
+        ].joined(separator: "\n")
+
+        let currencyData = try PlutusFinancialReportSlicer.parseCurrencyData(input: input)
+        XCTAssertEqual(currencyData.count, 2)
+
+        let eur = try XCTUnwrap(currencyData.first(where: { $0.currency == "EUR" }))
+        XCTAssertEqual(eur.adjustments, 10, accuracy: 0.000001)
+        XCTAssertEqual(eur.taxFactor, 1, accuracy: 0.000001)
+
+        let jpy = try XCTUnwrap(currencyData.first(where: { $0.currency == "JPY" }))
+        XCTAssertEqual(jpy.adjustments, 0, accuracy: 0.000001)
+        XCTAssertEqual(jpy.taxFactor, 0.8, accuracy: 0.000001)
+    }
+
+    func testSplitSalesByCorporationAppliesAdjustmentsOncePerCurrency() throws {
+        let dateRange = DateInterval(start: Date.now.addingTimeInterval(-60 * 60 * 24), end: Date.now)
+        let sales: [SalesForCountry] = [
+            SalesForCountry(countryCode: "DE", currency: "EUR", sales: [ProductSale(product: "Example App", quantity: 1, amount: 50)]),
+            SalesForCountry(countryCode: "FR", currency: "EUR", sales: [ProductSale(product: "Example App", quantity: 1, amount: 50)]),
+        ]
+        let currencyData: [CurrencyData] = [
+            CurrencyData(currency: "EUR", exchangeRate: 1, taxFactor: 1, adjustments: 10, bankAccountCurrency: "EUR"),
+        ]
+
+        let invoices = try PlutusFinancialReportSlicer.splitSalesByCorporation(
+            sales: sales,
+            dateRange: dateRange,
+            currencyData: currencyData,
+            selectedCorporations: [.europe],
+            localCurrency: "EUR")
+        XCTAssertEqual(invoices.count, 1)
+
+        let invoice = try XCTUnwrap(invoices.first)
+        XCTAssertEqual(invoice.currencyAdjustments.count, 1)
+        let adjustment = try XCTUnwrap(invoice.currencyAdjustments.first)
+        XCTAssertEqual(adjustment.currency, "EUR")
+        XCTAssertEqual(adjustment.amount, 10, accuracy: 0.000001)
+        XCTAssertEqual(invoice.totalInLocalCurrency, 110, accuracy: 0.000001)
+    }
+
+    func testCurrencyDataHandlesBulgariaStyleAdjustmentWithZeroTotalOwed() throws {
+        let firstRow = "iTunes Connect - Payments and Financial Reports (Dummy)" + String(repeating: ",", count: 12)
+        let blankRow = String(repeating: ",", count: 12)
+        let input = [
+            firstRow,
+            blankRow,
+            "País o región (Divisa),Unidades vendidas,Ingresado,Subtotal antes de impuestos,Impuesto repercutido,Ajustes,Retención fiscal,Total adeudado,Tipo de cambio,Ganancias,Divisa de la cuenta bancaria,",
+            "Eurozona (EUR),667,3030.30,3030.30,0,27.15,0,3057.45,1.00000,3057.45,EUR,",
+            "Bulgaria (BGN),3,53.10,53.10,0,-53.10,0,0.00,0,0,EUR,",
+            blankRow,
+        ].joined(separator: "\n")
+
+        let currencyData = try PlutusFinancialReportSlicer.parseCurrencyData(input: input)
+
+        let eur = try XCTUnwrap(currencyData.first(where: { $0.currency == "EUR" }))
+        XCTAssertEqual(eur.adjustments, 27.15, accuracy: 0.000001)
+        XCTAssertEqual(eur.taxFactor, 1, accuracy: 0.000001)
+        XCTAssertEqual(eur.exchangeRate, 1, accuracy: 0.000001)
+
+        let bgn = try XCTUnwrap(currencyData.first(where: { $0.currency == "BGN" }))
+        XCTAssertEqual(bgn.adjustments, -53.10, accuracy: 0.000001)
+        XCTAssertEqual(bgn.exchangeRate, 0, accuracy: 0.000001)
+        XCTAssertEqual(bgn.taxFactor, 1, accuracy: 0.000001)
     }
 
     func testParseFinancialReports() throws {
