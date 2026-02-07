@@ -120,6 +120,13 @@ public enum PlutusFinancialReportSlicer {
                 throw ParsingError.FailedParsingValue
             }
 
+            // If the report has no payout for this currency, avoid division by zero.
+            // Keep a zero exchange rate so totals in local currency are zero.
+            if amountAfterTax == 0 {
+                result.append(CurrencyData(currency: currency, exchangeRate: 0, taxFactor: 1.0, bankAccountCurrency: bankAccountCurrency))
+                continue
+            }
+
             // There are very rare cases in which tax is withheld for a country seemingly without corresponding product sales within
             // the same period. As we can't handle these in a clean way because of the missing product context, just issue a warning:
             // https://github.com/fedoco/apple-slicer/issues/9

@@ -163,6 +163,28 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
         XCTAssertEqual(financialReportsData.dateRange, DateInterval(start: dateFormatter.date(from: "08/31/2014")!, end: dateFormatter.date(from: "09/27/2014")!))
     }
 
+    func testCurrencyDataZeroPayoutAvoidsDivisionByZero() throws {
+        let lines = [
+            csvLine(["Report (January 2025)"] + Array(repeating: "", count: 12)),
+            "",
+            csvLine(["Region (Currency)", "Units Sold", "Earned", "Pre-Tax Subtotal", "Input Tax", "Adjustments", "Withholding Tax", "Total Owed", "Exchange Rate", "Proceeds", "Bank Account Currency", ""]),
+            csvLine(["Americas (USD)", "0", "0", "0", "0", "0", "0", "0", "0", "0", "EUR", ""]),
+            csvLine(["Euro-Zone (EUR)", "1", "10", "10", "0", "0", "0", "10", "1.0", "10", "EUR", ""]),
+        ]
+
+        let input = lines.joined(separator: "\n")
+        let currencyData = try PlutusFinancialReportSlicer.parseCurrencyData(input: input)
+
+        guard let usd = currencyData.first(where: { $0.currency == "USD" }) else {
+            XCTFail("USD entry missing")
+            return
+        }
+
+        XCTAssertEqual(usd.exchangeRate, 0, accuracy: 0.000001)
+        XCTAssertEqual(usd.taxFactor, 1, accuracy: 0.000001)
+        XCTAssertEqual(usd.bankAccountCurrency, "EUR")
+    }
+
     fileprivate func AssertSameCountrySplitting(_ a: [Invoice.SubInvoice], _ b: [Invoice.SubInvoice], file: StaticString = #file, line: UInt = #line) {
         XCTAssertEqual(Set(a), Set(b), file: file, line: line)
     }
@@ -174,5 +196,9 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
     fileprivate func readFile(url: URL) throws -> String {
         let data = try Data(contentsOf: url)
         return String(data: data, encoding: .utf8)!
+    }
+
+    private func csvLine(_ fields: [String]) -> String {
+        fields.joined(separator: ",")
     }
 }
