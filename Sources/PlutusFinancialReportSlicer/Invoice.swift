@@ -16,6 +16,21 @@ public struct Invoice: Equatable, Codable, Hashable {
         self.currencyAdjustments = currencyAdjustments
     }
 
+    private enum CodingKeys: String, CodingKey {
+        case recipient
+        case countrySplitting
+        case currencyAdjustments
+        case localCurrency
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.recipient = try container.decode(Subsidiary.self, forKey: .recipient)
+        self.countrySplitting = try container.decode([SubInvoice].self, forKey: .countrySplitting)
+        self.currencyAdjustments = try container.decodeIfPresent([CurrencyAdjustment].self, forKey: .currencyAdjustments) ?? []
+        self.localCurrency = try container.decode(String.self, forKey: .localCurrency)
+    }
+
     public struct SubInvoice: Equatable, Hashable, Codable {
         public let country: String
         public let countryCode: String
@@ -86,6 +101,14 @@ public struct CurrencyData: Codable, Equatable {
     let taxFactor: Double
     let adjustments: Double
     let bankAccountCurrency: String
+
+    init(currency: String, exchangeRate: Double, taxFactor: Double, adjustments: Double, bankAccountCurrency: String) {
+        self.currency = currency
+        self.exchangeRate = exchangeRate
+        self.taxFactor = taxFactor
+        self.adjustments = adjustments
+        self.bankAccountCurrency = bankAccountCurrency
+    }
 
     private enum CodingKeys: String, CodingKey {
         case currency
