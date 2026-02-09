@@ -86,4 +86,21 @@ public struct CurrencyData: Codable, Equatable {
     let taxFactor: Double
     let adjustments: Double
     let bankAccountCurrency: String
+
+    private enum CodingKeys: String, CodingKey {
+        case currency
+        case exchangeRate
+        case taxFactor
+        case adjustments
+        case bankAccountCurrency
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.currency = try container.decode(String.self, forKey: .currency)
+        self.exchangeRate = try container.decode(Double.self, forKey: .exchangeRate)
+        self.taxFactor = try container.decode(Double.self, forKey: .taxFactor)
+        self.adjustments = try container.decodeIfPresent(Double.self, forKey: .adjustments) ?? 0.0
+        self.bankAccountCurrency = try container.decode(String.self, forKey: .bankAccountCurrency)
+    }
 }
