@@ -45,6 +45,7 @@ public enum PlutusFinancialReportSlicer {
         // column indices differ if report has a "Balance" column
         // if the report contains earnings that haven't surpassed the origin country's payout threshold, line 3 has a "Balance" column which makes for shifted column indices
         let columnIndexAmountPreTax = 3 + (headerRow.count == 13 ? 1 : 0)
+        let columnIndexAdjustments = 5 + (headerRow.count == 13 ? 1 : 0)
         let columnIndexAmountAfterTax = 7 + (headerRow.count == 13 ? 1 : 0)
         let columnIndexEarnings = 9 + (headerRow.count == 13 ? 1 : 0)
         let columnIndexBankAccountCurrency = 10 + (headerRow.count == 13 ? 1 : 0)
@@ -110,20 +111,29 @@ public enum PlutusFinancialReportSlicer {
             }
 
             guard let preTaxString = line[safe: columnIndexAmountPreTax]?.replacingOccurrences(of: ",", with: ""),
+                  let adjustmentsString = line[safe: columnIndexAdjustments]?.replacingOccurrences(of: ",", with: ""),
                   let afterTaxString = line[safe: columnIndexAmountAfterTax]?.replacingOccurrences(of: ",", with: ""),
                   let earningsString = line[safe: columnIndexEarnings]?.replacingOccurrences(of: ",", with: ""),
                   let bankAccountCurrency = line[safe: columnIndexBankAccountCurrency]?.replacingOccurrences(of: ",", with: ""),
 
                   let amountPreTax = Double(preTaxString),
+                  let adjustments = Double(adjustmentsString),
                   let amountAfterTax = Double(afterTaxString),
                   let earnings = Double(earningsString) else {
                 throw ParsingError.FailedParsingValue
             }
 
+            // If the report has no payout for this currency, avoid division by zero.
+            // Keep a zero exchange rate so totals in local currency are zero.
+            if amountAfterTax == 0 {
+                result.append(CurrencyData(currency: currency, exchangeRate: 0, taxFactor: 1, adjustments: adjustments, bankAccountCurrency: bankAccountCurrency))
+                continue
+            }
+
             // There are very rare cases in which tax is withheld for a country seemingly without corresponding product sales within
             // the same period. As we can't handle these in a clean way because of the missing product context, just issue a warning:
             // https://github.com/fedoco/apple-slicer/issues/9
-            if amountPreTax == 0 && amountAfterTax != 0 {
+            if amountPreTax == 0 && amountAfterTax - adjustments != 0 {
                 print("WARNING:")
                 print("Taxes without directly associated product sales have been withheld by Apple for " + currencyCol)
                 print("Please deduct \(currency) \(amountAfterTax) (which is \(earnings)) manually for that country")
@@ -134,10 +144,10 @@ public enum PlutusFinancialReportSlicer {
             // because its value is rounded to 6 decimal places and sometimes not precise enough
             let exchangeRate = earnings / amountAfterTax
 
-            let tax: Double = amountPreTax - amountAfterTax
+            let tax: Double = amountPreTax - (amountAfterTax - adjustments)
             let taxFactor = 1.0 - abs(tax / amountPreTax)
 
-            result.append(CurrencyData(currency: currency, exchangeRate: exchangeRate, taxFactor: taxFactor, bankAccountCurrency: bankAccountCurrency))
+            result.append(CurrencyData(currency: currency, exchangeRate: exchangeRate, taxFactor: taxFactor, adjustments: adjustments, bankAccountCurrency: bankAccountCurrency))
         }
 
         return result
@@ -232,6 +242,7 @@ public enum PlutusFinancialReportSlicer {
     /// Print sales grouped by Apple subsidiaries, by countries in which the sales have been made and by products sold.
     public static func splitSalesByCorporation(sales: [SalesForCountry], dateRange: DateInterval, currencyData: [CurrencyData], selectedCorporations: [Subsidiary] = Subsidiary.allCases, localCurrency: String? = nil) throws -> [Invoice] {
         let localCurrency: String = localCurrency ?? currencyData.map(\.bankAccountCurrency).reduce(into: [:], { $0[$1, default: 0] += 1 }).max(by: { $0.value < $1.value })?.key ?? "EUR"
+        let currencyDataByCurrency = currencyData.reduce(into: [String: CurrencyData](), { $0[$1.currency] = $1 })
         var invoices: [Invoice] = []
 
         guard dateRange.start >= Date.subsidiaryChange2024 || dateRange.end <= Date.subsidiaryChange2024 else {
@@ -258,7 +269,7 @@ public enum PlutusFinancialReportSlicer {
                 var taxFactor: Double = 1
 
                 if countryCurrency != localCurrency {
-                    if let data = currencyData.first(where: { $0.currency == countryCurrency }) {
+                    if let data = currencyDataByCurrency[countryCurrency] {
                         exchangeRate = data.exchangeRate
                         taxFactor = data.taxFactor
                     } else if productsSold.contains(where: { $0.quantity > 0 }) {
@@ -287,10 +298,25 @@ public enum PlutusFinancialReportSlicer {
                 countrySplitting.append(Invoice.SubInvoice(country: country, countryCode: countryCode, countryCurrency: countryCurrency, invoiceItems: invoiceItems))
             }
 
+            let currenciesInCorporation = Set(salesInCorp.map(\.currency))
+            let currencyAdjustments = currenciesInCorporation.sorted().compactMap({ currency -> Invoice.CurrencyAdjustment? in
+                guard let data = currencyDataByCurrency[currency],
+                      data.adjustments != 0 else {
+                    return nil
+                }
+                let amountInLocalCurrency = data.adjustments * data.exchangeRate
+                return Invoice.CurrencyAdjustment(
+                    currency: currency,
+                    amount: data.adjustments,
+                    exchangeRate: data.exchangeRate,
+                    amountInLocalCurrency: amountInLocalCurrency)
+            })
+
             invoices.append(Invoice(
                 recipient: corporation,
                 countrySplitting: countrySplitting,
-                localCurrency: localCurrency))
+                localCurrency: localCurrency,
+                currencyAdjustments: currencyAdjustments))
         }
 
         return invoices
