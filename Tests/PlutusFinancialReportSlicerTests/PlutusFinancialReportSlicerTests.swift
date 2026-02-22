@@ -2,6 +2,14 @@
 import XCTest
 
 final class PlutusFinancialReportSlicerTests: XCTestCase {
+    private static let fixedDateRangeAfterSubsidiaryChange: DateInterval = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = calendar.date(from: DateComponents(year: 2025, month: 1, day: 15))!
+        let end = calendar.date(from: DateComponents(year: 2025, month: 1, day: 16))!
+        return DateInterval(start: start, end: end)
+    }()
+
     func testFinancialReportCSVParser() throws {
         let input = try readFile(url: Bundle.module.url(forResource: "financial_report", withExtension: "csv")!)
         let csv = PlutusFinancialReportSlicer.parseCSV(input: input)
@@ -37,7 +45,7 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
         let report: String = try readFile(url: Bundle.module.url(forResource: "45545510_0914", withExtension: "txt")!)
         let financialReportsData = try PlutusFinancialReportSlicer.parseFinancialReports(report: report)
 
-        let dateRange = DateInterval(start: .now.addingTimeInterval(-60 * 60 * 24 * 3), end: .now)
+        let dateRange = Self.fixedDateRangeAfterSubsidiaryChange
 
         let splits = try PlutusFinancialReportSlicer.splitSalesByCorporation(sales: financialReportsData.sales, dateRange: dateRange, currencyData: currencyData)
 
@@ -144,7 +152,7 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
     }
 
     func testSplitSalesByCorporationAppliesAdjustmentsOncePerCurrency() throws {
-        let dateRange = DateInterval(start: Date.now.addingTimeInterval(-60 * 60 * 24), end: Date.now)
+        let dateRange = Self.fixedDateRangeAfterSubsidiaryChange
         let sales: [SalesForCountry] = [
             SalesForCountry(countryCode: "DE", currency: "EUR", sales: [ProductSale(product: "Example App", quantity: 1, amount: 50)]),
             SalesForCountry(countryCode: "FR", currency: "EUR", sales: [ProductSale(product: "Example App", quantity: 1, amount: 50)]),
@@ -171,7 +179,7 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
     }
 
     func testSplitSalesByCorporationSkipsCountryWithoutFinalizedCurrencyData() throws {
-        let dateRange = DateInterval(start: Date.now.addingTimeInterval(-60 * 60 * 24), end: Date.now)
+        let dateRange = Self.fixedDateRangeAfterSubsidiaryChange
         let sales: [SalesForCountry] = [
             SalesForCountry(countryCode: "DE", currency: "EUR", sales: [ProductSale(product: "Example App", quantity: 1, amount: 50)]),
             SalesForCountry(countryCode: "BG", currency: "BGN", sales: [ProductSale(product: "Example App", quantity: 1, amount: 21.24)]),
@@ -199,7 +207,7 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
     }
 
     func testSplitSalesByCorporationThrowsForMissingNonEstimatedCurrencyData() throws {
-        let dateRange = DateInterval(start: Date.now.addingTimeInterval(-60 * 60 * 24), end: Date.now)
+        let dateRange = Self.fixedDateRangeAfterSubsidiaryChange
         let sales: [SalesForCountry] = [
             SalesForCountry(countryCode: "BG", currency: "BGN", sales: [ProductSale(product: "Example App", quantity: 1, amount: 21.24)]),
         ]
