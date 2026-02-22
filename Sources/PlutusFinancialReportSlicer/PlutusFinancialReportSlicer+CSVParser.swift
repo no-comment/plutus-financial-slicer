@@ -5,6 +5,7 @@ extension PlutusFinancialReportSlicer {
         input
             .replacingOccurrences(of: "\r\n", with: "\n")
             .replacingOccurrences(of: "\r", with: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
             .split(whereSeparator: \.isNewline)
             .map { splitRow(line: String($0), delimiter: delimiter) }
     }
