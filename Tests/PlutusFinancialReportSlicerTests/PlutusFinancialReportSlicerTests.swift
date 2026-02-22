@@ -40,7 +40,6 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
         let dateRange = DateInterval(start: .now.addingTimeInterval(-60 * 60 * 24 * 3), end: .now)
 
         let splits = try PlutusFinancialReportSlicer.splitSalesByCorporation(sales: financialReportsData.sales, dateRange: dateRange, currencyData: currencyData)
-        print(splits)
 
         XCTAssertEqual(splits.count, 4)
         guard splits.count == 4 else { return }
