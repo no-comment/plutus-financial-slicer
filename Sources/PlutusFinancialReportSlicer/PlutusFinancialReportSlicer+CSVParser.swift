@@ -2,14 +2,11 @@ import Foundation
 
 extension PlutusFinancialReportSlicer {
     static func parseCSV(input: String, delimiter: Character = ",") -> [[String]] {
-        let normalizedInput = input
+        input
             .replacingOccurrences(of: "\r\n", with: "\n")
             .replacingOccurrences(of: "\r", with: "\n")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        return normalizedInput
-            .components(separatedBy: "\n")
-            .map({ splitRow(line: $0, delimiter: delimiter) })
+            .split(whereSeparator: \.isNewline)
+            .map { splitRow(line: String($0), delimiter: delimiter) }
     }
     
     private static func splitRow(line: String, delimiter: Character) -> [String] {
