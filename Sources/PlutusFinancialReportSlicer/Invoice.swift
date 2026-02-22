@@ -4,22 +4,26 @@ public struct Invoice: Equatable, Codable, Hashable {
     public let recipient: Subsidiary
     public let countrySplitting: [SubInvoice]
     public let currencyAdjustments: [CurrencyAdjustment]
+    public let skippedEntries: [SkippedEntry]
     public var totalInLocalCurrency: Double {
         countrySplitting.reduce(0, { $0 + $1.subtotalAmountInLocalCurrency }) + currencyAdjustments.reduce(0, { $0 + $1.amountInLocalCurrency })
     }
+
     public let localCurrency: String
-    
-    public init(recipient: Subsidiary, countrySplitting: [SubInvoice], localCurrency: String, currencyAdjustments: [CurrencyAdjustment] = []) {
+
+    public init(recipient: Subsidiary, countrySplitting: [SubInvoice], localCurrency: String, currencyAdjustments: [CurrencyAdjustment] = [], skippedEntries: [SkippedEntry] = []) {
         self.recipient = recipient
         self.countrySplitting = countrySplitting
         self.localCurrency = localCurrency
         self.currencyAdjustments = currencyAdjustments
+        self.skippedEntries = skippedEntries
     }
 
     private enum CodingKeys: String, CodingKey {
         case recipient
         case countrySplitting
         case currencyAdjustments
+        case skippedEntries
         case localCurrency
     }
 
@@ -28,6 +32,7 @@ public struct Invoice: Equatable, Codable, Hashable {
         self.recipient = try container.decode(Subsidiary.self, forKey: .recipient)
         self.countrySplitting = try container.decode([SubInvoice].self, forKey: .countrySplitting)
         self.currencyAdjustments = try container.decodeIfPresent([CurrencyAdjustment].self, forKey: .currencyAdjustments) ?? []
+        self.skippedEntries = try container.decodeIfPresent([SkippedEntry].self, forKey: .skippedEntries) ?? []
         self.localCurrency = try container.decode(String.self, forKey: .localCurrency)
     }
 
@@ -37,8 +42,13 @@ public struct Invoice: Equatable, Codable, Hashable {
         public let countryCurrency: String
         public let invoiceItems: [InvoiceItem]
 
-        public var subtotalAmount: Double { invoiceItems.reduce(0, { $0 + $1.amount }) }
-        public var subtotalAmountInLocalCurrency: Double { invoiceItems.reduce(0, { $0 + $1.amountInLocalCurrency }) }
+        public var subtotalAmount: Double {
+            invoiceItems.reduce(0, { $0 + $1.amount })
+        }
+
+        public var subtotalAmountInLocalCurrency: Double {
+            invoiceItems.reduce(0, { $0 + $1.amountInLocalCurrency })
+        }
 
         public init(country: String, countryCode: String, countryCurrency: String, invoiceItems: [InvoiceItem]) {
             self.country = country
@@ -80,6 +90,36 @@ public struct Invoice: Equatable, Codable, Hashable {
             self.exchangeRate = exchangeRate
             self.amountInLocalCurrency = amountInLocalCurrency
         }
+    }
+
+    public struct SkippedEntry: Equatable, Hashable, Codable {
+        public let country: String
+        public let countryCode: String
+        public let countryCurrency: String
+        public let quantity: Int
+        public let amount: Double
+
+        public init(country: String, countryCode: String, countryCurrency: String, quantity: Int, amount: Double) {
+            self.country = country
+            self.countryCode = countryCode
+            self.countryCurrency = countryCurrency
+            self.quantity = quantity
+            self.amount = amount
+        }
+    }
+}
+
+public struct CurrencyDataParseResult: Equatable, Codable {
+    public let currencyData: [CurrencyData]
+    public let estimatedOnlyCurrencies: [String]
+
+    public var estimatedOnlyCurrencySet: Set<String> {
+        Set(estimatedOnlyCurrencies)
+    }
+
+    public init(currencyData: [CurrencyData], estimatedOnlyCurrencies: [String]) {
+        self.currencyData = currencyData
+        self.estimatedOnlyCurrencies = estimatedOnlyCurrencies
     }
 }
 

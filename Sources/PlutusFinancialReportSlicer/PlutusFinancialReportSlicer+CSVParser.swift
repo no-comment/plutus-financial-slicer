@@ -2,7 +2,12 @@ import Foundation
 
 extension PlutusFinancialReportSlicer {
     static func parseCSV(input: String, delimiter: Character = ",") -> [[String]] {
-        return input.trimmingCharacters(in: .whitespacesAndNewlines).components(separatedBy: .newlines).map({ splitRow(line: $0, delimiter: delimiter) })
+        input
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .split(whereSeparator: \.isNewline)
+            .map { splitRow(line: String($0), delimiter: delimiter) }
     }
     
     private static func splitRow(line: String, delimiter: Character) -> [String] {
@@ -41,7 +46,7 @@ public enum ParsingError: Error {
     case InvalidColumnCount
     case NoDataInFile
     case LineNoCurrencySymbol
-    case FailedParsingValue
+    case FailedParsingValue(String)
     case CurrencyDataNotFound(currency: String)
     /// Apple changed its subsidiary structure on October 26, 2024. Sales must occur either before or after that date.
     case DateRangeOverlappingBreakingChangeDate(interval: DateInterval)
@@ -58,8 +63,8 @@ extension ParsingError: LocalizedError {
             NSLocalizedString("There was not data in the file.", comment: "Localized description for ParsingError.NoDataInFile")
         case .LineNoCurrencySymbol:
             NSLocalizedString("No currency symbol found in line.", comment: "Localized description for ParsingError.LineNoCurrencySymbol")
-        case .FailedParsingValue:
-            NSLocalizedString("Failed parsing a value", comment: "Localized description for ParsingError.FailedParsingValue")
+        case .FailedParsingValue(let details):
+            NSLocalizedString("Failed parsing a value: \(details)", comment: "Localized description for ParsingError.FailedParsingValue")
         case .CurrencyDataNotFound(let currency):
             NSLocalizedString("No currency data was found for '\(currency)'.", comment: "Localized description for ParsingError.CurrencyDataNotFound")
         case .DateRangeOverlappingBreakingChangeDate(let interval):
