@@ -159,7 +159,8 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
             dateRange: dateRange,
             currencyData: currencyData,
             selectedCorporations: [.europe],
-            localCurrency: "EUR")
+            localCurrency: "EUR"
+        )
         XCTAssertEqual(invoices.count, 1)
 
         let invoice = try XCTUnwrap(invoices.first)
@@ -168,6 +169,58 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
         XCTAssertEqual(adjustment.currency, "EUR")
         XCTAssertEqual(adjustment.amount, 10, accuracy: 0.000001)
         XCTAssertEqual(invoice.totalInLocalCurrency, 110, accuracy: 0.000001)
+    }
+
+    func testSplitSalesByCorporationSkipsCountryWithoutFinalizedCurrencyData() throws {
+        let dateRange = DateInterval(start: Date.now.addingTimeInterval(-60 * 60 * 24), end: Date.now)
+        let sales: [SalesForCountry] = [
+            SalesForCountry(countryCode: "DE", currency: "EUR", sales: [ProductSale(product: "Example App", quantity: 1, amount: 50)]),
+            SalesForCountry(countryCode: "BG", currency: "BGN", sales: [ProductSale(product: "Example App", quantity: 1, amount: 21.24)]),
+        ]
+        let currencyData: [CurrencyData] = [
+            CurrencyData(currency: "EUR", exchangeRate: 1, taxFactor: 1, adjustments: 0, bankAccountCurrency: "EUR"),
+        ]
+
+        let invoices = try PlutusFinancialReportSlicer.splitSalesByCorporation(
+            sales: sales,
+            dateRange: dateRange,
+            currencyData: currencyData,
+            estimatedOnlyCurrencies: ["BGN"],
+            selectedCorporations: [.europe],
+            localCurrency: "EUR"
+        )
+
+        XCTAssertEqual(invoices.count, 1)
+        let invoice = try XCTUnwrap(invoices.first)
+        XCTAssertEqual(invoice.countrySplitting.map(\.countryCode), ["DE"])
+        XCTAssertEqual(invoice.totalInLocalCurrency, 50, accuracy: 0.000001)
+        XCTAssertEqual(invoice.skippedEntries.count, 1)
+        XCTAssertEqual(invoice.skippedEntries.first?.countryCode, "BG")
+        XCTAssertEqual(invoice.skippedEntries.first?.countryCurrency, "BGN")
+    }
+
+    func testSplitSalesByCorporationThrowsForMissingNonEstimatedCurrencyData() throws {
+        let dateRange = DateInterval(start: Date.now.addingTimeInterval(-60 * 60 * 24), end: Date.now)
+        let sales: [SalesForCountry] = [
+            SalesForCountry(countryCode: "BG", currency: "BGN", sales: [ProductSale(product: "Example App", quantity: 1, amount: 21.24)]),
+        ]
+        let currencyData: [CurrencyData] = [
+            CurrencyData(currency: "EUR", exchangeRate: 1, taxFactor: 1, adjustments: 0, bankAccountCurrency: "EUR"),
+        ]
+
+        XCTAssertThrowsError(try PlutusFinancialReportSlicer.splitSalesByCorporation(
+            sales: sales,
+            dateRange: dateRange,
+            currencyData: currencyData,
+            estimatedOnlyCurrencies: [],
+            selectedCorporations: [.europe],
+            localCurrency: "EUR"
+        )) { error in
+            guard case let ParsingError.CurrencyDataNotFound(currency) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(currency, "BGN")
+        }
     }
 
     func testCurrencyDataHandlesBulgariaStyleAdjustmentWithZeroTotalOwed() throws {
@@ -193,6 +246,42 @@ final class PlutusFinancialReportSlicerTests: XCTestCase {
         XCTAssertEqual(bgn.adjustments, -53.10, accuracy: 0.000001)
         XCTAssertEqual(bgn.exchangeRate, 0, accuracy: 0.000001)
         XCTAssertEqual(bgn.taxFactor, 1, accuracy: 0.000001)
+    }
+
+    func testCurrencyDataParsesCRLFWithBalanceColumn() throws {
+        let lines = [
+            "\"iTunes Connect - Payments and Financial Reports\t(December, 2025)\",,,,,,,,,,,,",
+            ",,,,,,,,,,,,",
+            "Country or Region (Currency),Units Sold,Balance,Earned,Pre-Tax Subtotal,Input Tax,Adjustments,Withholding Tax,Total Owed,Exchange Rate,Proceeds,Bank Account Currency,",
+            "\"United Arab Emirates (AED)\",\"4\",\"\",\"43.68\",\"43.68\",\"0\",\"0\",\"0\",\"43.68\",\"0.22825\",\"9.97\",\"EUR\",",
+            "\"Australia (AUD)\",\"72\",\"\",\"818.08\",\"818.08\",\"0\",\"0\",\"0\",\"818.08\",\"0.58189\",\"476.03\",\"EUR\",",
+            ",,,,,,,,,,,,",
+        ]
+        let input = lines.joined(separator: "\r\n")
+
+        let currencyData = try PlutusFinancialReportSlicer.parseCurrencyData(input: input)
+
+        XCTAssertEqual(currencyData.count, 2)
+        XCTAssertEqual(currencyData.map(\.currency), ["AED", "AUD"])
+    }
+
+    func testCurrencyDataWithDetailsDetectsEstimatedOnlyCurrency() throws {
+        let lines = [
+            "\"iTunes Connect - Payments and Financial Reports\t(December, 2025)\",,,,,,,,,,,,",
+            ",,,,,,,,,,,,",
+            "Country or Region (Currency),Units Sold,Balance,Earned,Pre-Tax Subtotal,Input Tax,Adjustments,Withholding Tax,Total Owed,Exchange Rate,Proceeds,Bank Account Currency,",
+            "\"Euro-Zone (EUR)\",\"1\",\"\",\"10.00\",\"10.00\",\"0\",\"0\",\"0\",\"10.00\",\"1.00000\",\"10.00\",\"EUR\",",
+            ",,,,,,,,,,,,",
+            "Country or Region (Currency),Units Sold,Balance,Earned,Pre-Tax Subtotal,Input Tax,Adjustments,Withholding Tax,Total Owed,Exchange Rate,Proceeds,Bank Account Currency,",
+            "\"Bulgaria (BGN)\",\"1\",\"-21.24\",\"21.24\",\"0.00\",\"0\",\"-21.24\",\"0\",\"-21.24\",\"\",\"-10.85\",\"EUR\",",
+            ",,,,,,,,,,,,",
+        ]
+        let input = lines.joined(separator: "\r\n")
+
+        let details = try PlutusFinancialReportSlicer.parseCurrencyDataWithDetails(input: input)
+
+        XCTAssertEqual(details.currencyData.map(\.currency), ["EUR"])
+        XCTAssertEqual(Set(details.estimatedOnlyCurrencies), ["BGN"])
     }
 
     func testParseFinancialReports() throws {
